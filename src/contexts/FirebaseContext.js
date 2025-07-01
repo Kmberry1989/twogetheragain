@@ -14,11 +14,19 @@ export const FirebaseProvider = ({ children }) => {
   const [appId, setAppId] = useState('');
 
   useEffect(() => {
-    const firebaseConfigStr = typeof window.__firebase_config !== 'undefined' ? window.__firebase_config : '{}';
-    const firebaseConfig = JSON.parse(firebaseConfigStr);
+    // Build the Firebase config from Environment Variables
+    const firebaseConfig = {
+      apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+      authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.REACT_APP_FIREBASE_APP_ID,
+    };
 
-    if (Object.keys(firebaseConfig).length === 0) {
-        console.warn("Firebase config not found. App will run in offline mode.");
+    // Check if the keys are present. If not, we can't initialize Firebase.
+    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+        console.warn("Firebase config environment variables not set. App will run in offline/demo mode.");
         setIsAuthReady(true); 
         setAppId('default-app-id-no-firebase');
         return;
@@ -42,12 +50,13 @@ export const FirebaseProvider = ({ children }) => {
     setDb(firestoreDb);
     setAuth(firebaseAuth);
 
-    const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'twogether';
+    const currentAppId = process.env.REACT_APP_TWOGETHER_APP_ID || 'twogether';
     setAppId(currentAppId);
 
     const unsubscribeAuth = onAuthStateChanged(firebaseAuth, async (user) => {
       if (!user) {
         try {
+          // Note: __initial_auth_token is typically for specific environments and might not be used on Vercel
           const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
           if (initialAuthToken) {
             await signInWithCustomToken(firebaseAuth, initialAuthToken);
