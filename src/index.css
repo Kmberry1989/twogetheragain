@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-primary { @apply px-6 py-3 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary-lg { @apply px-10 py-5 bg-gradient-to-r from-green-500 to-teal-600 text-white text-2xl font-bold rounded-xl shadow-lg hover:from-green-600 hover:to-teal-700 transition transform hover:scale-105 disabled:opacity-60; }
+  .btn-primary-sm { @apply px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm; }
+  .btn-secondary { @apply px-6 py-3 bg-gray-500 text-white rounded-lg shadow hover:bg-gray-600 transition text-lg font-semibold disabled:opacity-50; }
+  .btn-secondary-sm { @apply px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium; }
+  .btn-success { @apply px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition text-lg font-semibold; }
+  .btn-danger { @apply px-6 py-3 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition text-lg font-semibold; }
+  .btn-record { @apply px-6 py-3 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition disabled:opacity-50 flex items-center justify-center text-lg font-semibold; }
+  .btn-nav { @apply flex flex-col items-center justify-center p-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg hover:from-blue-600 hover:to-indigo-700 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-xl font-semibold; }
+  .input-field { @apply w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 mb-4 shadow-sm; }
+  .btn-icon-sm { @apply inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out forwards;
+}
