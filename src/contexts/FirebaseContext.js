@@ -3,8 +3,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { 
     initializeFirestore, 
-    memoryLocalCache,
-    enableIndexedDbPersistence 
+    memoryLocalCache
 } from 'firebase/firestore';
 
 export const FirebaseContext = createContext(null);
@@ -38,15 +37,11 @@ export const FirebaseProvider = ({ children }) => {
 
     const initializedApp = initializeApp(firebaseConfig);
     
-    // Initialize Firestore with robust persistence, falling back to memory cache
+    // Initialize Firestore with in-memory cache to avoid IndexedDB issues.
+    // This is the modern and correct way to do it, which avoids the "SDK cache is already specified" error.
     const firestoreDb = initializeFirestore(initializedApp, {
         localCache: memoryLocalCache()
     });
-    
-    enableIndexedDbPersistence(firestoreDb)
-      .then(() => console.log("Firestore offline persistence enabled."))
-      .catch((err) => console.warn("Firestore persistence failed, will use memory cache:", err.message));
-
 
     const firebaseAuth = getAuth(initializedApp);
 
