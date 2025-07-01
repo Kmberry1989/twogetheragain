@@ -60,7 +60,6 @@ export const FirebaseProvider = ({ children }) => {
     const unsubscribeAuth = onAuthStateChanged(firebaseAuth, async (user) => {
       if (!user) {
         try {
-          // Note: __initial_auth_token is for specific environments and might not be used on Vercel
           const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
           if (initialAuthToken) {
             await signInWithCustomToken(firebaseAuth, initialAuthToken);
