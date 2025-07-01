@@ -37,9 +37,16 @@ This is a React-based web application designed to help couples connect through f
 
 3.  **Set up Firebase:**
     - Create a new project in the [Firebase Console](https://console.firebase.google.com/).
-    - Add a new Web App to your project.
-    - Copy the `firebaseConfig` object provided.
-    - In the `public/index.html` file, paste your `firebaseConfig` into the `<script>` tag and uncomment it.
+    - Add a new Web App to your project and copy the values from the `firebaseConfig` object.
+    - Create a `.env.local` (or `.env`) file in the project root containing:
+      ```
+      REACT_APP_FIREBASE_API_KEY=your_api_key
+      REACT_APP_FIREBASE_AUTH_DOMAIN=your_auth_domain
+      REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+      REACT_APP_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+      REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+      REACT_APP_FIREBASE_APP_ID=your_app_id
+      ```
     - In the Firebase Console, enable **Anonymous Authentication** and **Firestore Database** (in Production mode).
     - Update your **Firestore Security Rules** with the rules provided in the setup guide.
 
