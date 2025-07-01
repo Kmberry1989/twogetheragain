@@ -1,7 +1,11 @@
 import React, { useState, useEffect, createContext } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { 
+    initializeFirestore, 
+    memoryLocalCache,
+    enableIndexedDbPersistence 
+} from 'firebase/firestore';
 
 export const FirebaseContext = createContext(null);
 
@@ -14,35 +18,28 @@ export const FirebaseProvider = ({ children }) => {
   const [appId, setAppId] = useState('');
 
   useEffect(() => {
-    // Build the Firebase config from Environment Variables
-    const firebaseConfig = {
-      apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-      authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-      storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.REACT_APP_FIREBASE_APP_ID,
-    };
+    const firebaseConfigStr = typeof window.__firebase_config !== 'undefined' ? window.__firebase_config : '{}';
+    const firebaseConfig = JSON.parse(firebaseConfigStr);
 
-    // Check if the keys are present. If not, we can't initialize Firebase.
-    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-        console.warn("Firebase config environment variables not set. App will run in offline/demo mode.");
+    if (Object.keys(firebaseConfig).length === 0) {
+        console.warn("Firebase config not found. App will run in offline mode.");
         setIsAuthReady(true); 
         setAppId('default-app-id-no-firebase');
         return;
     }
 
     const initializedApp = initializeApp(firebaseConfig);
-    const firestoreDb = getFirestore(initializedApp);
     
-    (async () => {
-        try {
-            await enableIndexedDbPersistence(firestoreDb);
-            console.log("Firestore offline persistence enabled.");
-        } catch (err) {
-            console.warn("Firestore persistence failed:", err.message);
-        }
-    })();
+    // Initialize Firestore with robust persistence, falling back to memory cache
+    const firestoreDb = initializeFirestore(initializedApp, {
+        localCache: memoryLocalCache() // Use in-memory cache as a primary to avoid IndexedDB issues in some environments
+    });
+    
+    // Optional: Try to enable IndexedDB persistence for better offline support, but don't block if it fails.
+    enableIndexedDbPersistence(firestoreDb)
+      .then(() => console.log("Firestore offline persistence enabled."))
+      .catch((err) => console.warn("Firestore persistence failed, will use memory cache:", err.message));
+
 
     const firebaseAuth = getAuth(initializedApp);
 
@@ -50,13 +47,12 @@ export const FirebaseProvider = ({ children }) => {
     setDb(firestoreDb);
     setAuth(firebaseAuth);
 
-    const currentAppId = process.env.REACT_APP_TWOGETHER_APP_ID || 'twogether';
+    const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'twogether';
     setAppId(currentAppId);
 
     const unsubscribeAuth = onAuthStateChanged(firebaseAuth, async (user) => {
       if (!user) {
         try {
-          // Note: __initial_auth_token is typically for specific environments and might not be used on Vercel
           const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
           if (initialAuthToken) {
             await signInWithCustomToken(firebaseAuth, initialAuthToken);
