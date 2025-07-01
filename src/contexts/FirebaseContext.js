@@ -67,7 +67,7 @@ export const FirebaseProvider = ({ children }) => {
           } else {
             await signInAnonymously(firebaseAuth);
           }
-        live} catch (error) {
+        } catch (error) {
           console.error("Error signing in:", error);
         }
       }
