@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 export const DuetHarmoniesMeasuresActivity = ({ activity, onUpdateActivity, onEndActivity, coupleData, userId }) => {
     const activityData = activity.data || {};
     const isMyTurn = activity.turn === userId || (coupleData?.status === "active_testing");
     const [isRecording, setIsRecording] = useState(false);
-    const [mediaRecorder, setMediaRecorder] = useState(null);
+    const mediaRecorderRef = useRef(null);
     const [message, setMessage] = useState(activityData.message || `Get ready to layer some sounds for: ${activityData.prompt}!`);
     const [audioPlayers, setAudioPlayers] = useState([]);
 
-    const layers = activityData.layers || [];
+    const layers = useMemo(() => activityData.layers || [], [activityData.layers]);
     const maxLayersPerUser = activityData.maxLayersPerUser || 2;
     const totalLayersGoal = maxLayersPerUser * (coupleData?.status === "active_testing" ? 2 : 2);
 
@@ -30,7 +30,15 @@ export const DuetHarmoniesMeasuresActivity = ({ activity, onUpdateActivity, onEn
         return () => {
             players.forEach(player => { player.pause(); player.src = ''; });
         };
-    }, [activityData.layers, activityData.prompt, activityData.message]);
+    }, [layers, activityData.prompt, activityData.message]);
+
+    useEffect(() => {
+        return () => {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+                mediaRecorderRef.current.stop();
+            }
+        };
+    }, []);
 
 
     const playAllLayers = () => {
@@ -63,6 +71,7 @@ export const DuetHarmoniesMeasuresActivity = ({ activity, onUpdateActivity, onEn
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             const chunks = [];
+            mediaRecorderRef.current = recorder;
             
             recorder.ondataavailable = e => chunks.push(e.data);
             recorder.onstart = () => {
@@ -74,6 +83,7 @@ export const DuetHarmoniesMeasuresActivity = ({ activity, onUpdateActivity, onEn
             };
             recorder.onstop = async () => {
                 stream.getTracks().forEach(track => track.stop());
+                mediaRecorderRef.current = null;
                 setIsRecording(false);
                 const blob = new Blob(chunks, { type: 'audio/webm' });
                 const reader = new FileReader();
@@ -114,6 +124,12 @@ export const DuetHarmoniesMeasuresActivity = ({ activity, onUpdateActivity, onEn
         }
     };
 
+    const stopRecordingEarly = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop();
+        }
+    };
+
     return (
         <div className="text-center p-4 rounded-lg bg-indigo-50 shadow-inner">
             <h3 className="text-2xl font-bold mb-1 text-indigo-700">Duet Harmonies (Measures)</h3>
@@ -137,13 +153,22 @@ export const DuetHarmoniesMeasuresActivity = ({ activity, onUpdateActivity, onEn
             </div>
 
             {isMyTurn && canRecordMore && layers.length < totalLayersGoal && (
-                <button
-                    onClick={startRecording}
-                    disabled={isRecording}
-                    className="btn-record"
-                >
-                    {isRecording ? `Recording (${secondsPerLoop}s)...` : `Record Layer ${layers.length + 1}`}
-                </button>
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+                    <button
+                        onClick={startRecording}
+                        disabled={isRecording}
+                        className="btn-record"
+                    >
+                        {isRecording ? `Recording (${secondsPerLoop}s)...` : `Record Layer ${layers.length + 1}`}
+                    </button>
+                    <button
+                        onClick={stopRecordingEarly}
+                        disabled={!isRecording}
+                        className="btn-secondary"
+                    >
+                        Stop
+                    </button>
+                </div>
             )}
             
             <div className="mt-4 max-h-40 overflow-y-auto space-y-2">

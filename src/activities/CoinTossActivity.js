@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 
 export const CoinTossActivity = ({ activity, onUpdateActivity, onEndActivity, coupleData, userId }) => { 
+  const activityData = useMemo(() => activity.data || {}, [activity.data]);
   const isMyTurn = activity.turn === userId || (coupleData?.status === "active_testing" && (activity.turn === coupleData?.user1Id || activity.turn === coupleData?.user2Id));
   const canvasRef = useRef(null); 
-  const [message, setMessage] = useState(activity.data?.message || ''); 
+  const [message, setMessage] = useState(activityData.message || ''); 
   const [tossInitiatedByMe, setTossInitiatedByMe] = useState(false); 
-  const tossResult = activity.data?.tossResult || null; 
-  const showContinueButton = activity.data?.showContinueButton || false; 
-  const playerAssignments = activity.data?.playerAssignments || {};
+  const tossResult = activityData.tossResult || null; 
+  const showContinueButton = activityData.showContinueButton || false; 
+  const playerAssignments = useMemo(() => activityData.playerAssignments || {}, [activityData.playerAssignments]);
   const scene = useRef(null); 
   const camera = useRef(null); 
   const renderer = useRef(null); 
@@ -19,24 +20,24 @@ export const CoinTossActivity = ({ activity, onUpdateActivity, onEndActivity, co
   const isAnimating = useRef(false);
 
   useEffect(() => { 
-    if (!activity.data?.playerAssignments && coupleData?.user1Id && coupleData?.user2Id) { 
+    if (!activityData.playerAssignments && coupleData?.user1Id && coupleData?.user2Id) { 
       const assignments = {}; 
       const coinSides = ['Heads', 'Tails']; 
       const shuffledSides = coinSides.sort(() => 0.5 - Math.random()); 
       assignments[coupleData.user1Id] = shuffledSides[0]; 
       if (coupleData.user1Id === coupleData.user2Id && coupleData.status === "active_testing") {} 
       else { assignments[coupleData.user2Id] = shuffledSides[1]; } 
-      onUpdateActivity({ ...activity.data, playerAssignments: assignments, message: "Assignments made!" }); 
+      onUpdateActivity({ ...activityData, playerAssignments: assignments, message: "Assignments made!" }); 
     } 
-  }, [activity.data, coupleData, onUpdateActivity, userId]);
+  }, [activityData, coupleData, onUpdateActivity]);
 
   useEffect(() => { 
-    setMessage(activity.data?.message || ''); 
-    if(activity.data?.tossResult && coin.current && !isAnimating.current){ 
-      coin.current.rotation.y = activity.data.tossResult === 'Heads' ? 0 : Math.PI; 
+    setMessage(activityData.message || ''); 
+    if(activityData.tossResult && coin.current && !isAnimating.current){ 
+      coin.current.rotation.y = activityData.tossResult === 'Heads' ? 0 : Math.PI; 
       coin.current.rotation.x = Math.PI / 2; 
     } 
-  }, [activity.data]);
+  }, [activityData.message, activityData.tossResult]);
 
   useEffect(() => { 
     const currentCanvas = canvasRef.current; 
@@ -90,7 +91,7 @@ export const CoinTossActivity = ({ activity, onUpdateActivity, onEndActivity, co
           if (coupleData.status === "active_testing") { winnerId = userId; } 
           else { winnerId = Object.keys(playerAssignments).find(uid => playerAssignments[uid] === finalOutcome); } 
           const activityMessage = `Landed on ${finalOutcome}! ${winnerId === userId ? 'You' : getUserDisplayName(winnerId, coupleData)} won!`; 
-          onUpdateActivity({ ...activity.data, tossResult: finalOutcome, winnerId: winnerId, message: activityMessage, showContinueButton: true }); 
+          onUpdateActivity({ ...activityData, tossResult: finalOutcome, winnerId: winnerId, message: activityMessage, showContinueButton: true }); 
         }
       } 
       renderer.current.render(scene.current, camera.current); 
@@ -104,11 +105,12 @@ export const CoinTossActivity = ({ activity, onUpdateActivity, onEndActivity, co
         renderer.current.setSize(newWidth, newHeight); 
       }
     }; 
-    if (!activity.data?.tossResult) { 
+    if (!activityData.tossResult) { 
       if(coin.current) coin.current.rotation.y = Math.random() * Math.PI * 2; 
     } else { 
-      if(coin.current) coin.current.rotation.y = activity.data.tossResult === 'Heads' ? 0 : Math.PI; 
+      if(coin.current) coin.current.rotation.y = activityData.tossResult === 'Heads' ? 0 : Math.PI; 
     } 
+    window.addEventListener('resize', handleResize);
     handleResize(); 
     animate(); 
     return () => { 
@@ -116,7 +118,7 @@ export const CoinTossActivity = ({ activity, onUpdateActivity, onEndActivity, co
       cancelAnimationFrame(animationFrameId.current); 
       if(renderer.current) renderer.current.dispose(); 
     }; 
-  }, [activity.data?.playerAssignments, coupleData, userId, onUpdateActivity]); 
+  }, [activityData, activityData.playerAssignments, coupleData, userId, onUpdateActivity, playerAssignments]); 
 
   const getUserDisplayName = (uid, cplData) => { 
     if (!cplData) return "Partner"; 
@@ -129,7 +131,7 @@ export const CoinTossActivity = ({ activity, onUpdateActivity, onEndActivity, co
   }; 
 
   const handleToss = () => { 
-    if (!isMyTurn || activity.data?.tossResult || tossInitiatedByMe || !coin.current) { 
+    if (!isMyTurn || activityData.tossResult || tossInitiatedByMe || !coin.current) { 
       setMessage(isMyTurn ? "Toss done." : "Not your turn!"); 
       return; 
     } 
@@ -138,12 +140,12 @@ export const CoinTossActivity = ({ activity, onUpdateActivity, onEndActivity, co
     isAnimating.current = true; 
     rotationSpeed.current = 0.2 + Math.random() * 0.2; 
     targetRotationY.current = Math.random() < 0.5 ? 0 : Math.PI; 
-    onUpdateActivity({ ...activity.data, message: "Coin in air!", showContinueButton: false, turn: userId }); 
+    onUpdateActivity({ ...activityData, message: "Coin in air!", showContinueButton: false, turn: userId }); 
   }; 
 
   const handleContinue = () => { 
     if (!tossResult) { setMessage("Wait for toss."); return; } 
-    onEndActivity({ outcome: tossResult, winnerId: activity.data.winnerId, scoreChange: 10, message: activity.data.message }); 
+    onEndActivity({ outcome: tossResult, winnerId: activityData.winnerId, scoreChange: 10, message: activityData.message }); 
   }; 
 
   const myAssignment = playerAssignments[userId]; 
@@ -161,9 +163,9 @@ export const CoinTossActivity = ({ activity, onUpdateActivity, onEndActivity, co
         <canvas ref={canvasRef} className="w-full h-full block"></canvas>
       </div> 
       {!tossResult && isMyTurn && ( <button onClick={handleToss} disabled={(!myAssignment && coupleData?.status !== "active_testing") || tossInitiatedByMe} className="btn-primary"> Toss! </button> )} 
-      {tossResult && ( <div className="mt-4 p-3 bg-white rounded shadow"> <p className="text-xl font-semibold">{activity.data?.message}</p> <p className="text-2xl mt-1">Landed: <span className={`font-bold ${tossResult === 'Heads' ? 'text-yellow-600' : 'text-gray-600'}`}>{tossResult}</span></p> </div> )} 
+      {tossResult && ( <div className="mt-4 p-3 bg-white rounded shadow"> <p className="text-xl font-semibold">{activityData.message}</p> <p className="text-2xl mt-1">Landed: <span className={`font-bold ${tossResult === 'Heads' ? 'text-yellow-600' : 'text-gray-600'}`}>{tossResult}</span></p> </div> )} 
       {showContinueButton && tossResult && ( <button onClick={handleContinue} className="btn-success mt-6"> Continue </button> )} 
-      {message && !activity.data?.message && <p className="text-sm text-gray-500 mt-3">{message}</p>} 
+      {message && !activityData.message && <p className="text-sm text-gray-500 mt-3">{message}</p>} 
     </div> 
   );
 };

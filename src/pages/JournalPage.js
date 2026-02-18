@@ -28,18 +28,20 @@ const JournalPage = ({ onNavigate }) => {
     if (!db || !coupleId || !appId) { setLoadingJournal(false); return; }
     setLoadingJournal(true); setJournalError(null);
     const q = query( collection(db, `artifacts/${appId}/public/data/journalEntries`), where("coupleId", "==", coupleId) );
+    const measureAudioPlayers = measureAudioPlayersRef.current;
+    const sceneAudioPlayer = sceneAudioPlayerRef;
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       entries.sort((a, b) => (b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0) - (a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0) );
       setJournalEntries(entries); setLoadingJournal(false);
     }, (err) => { console.error("Error fetching journal:", err); setJournalError(`Failed to load: ${err.message}`); setLoadingJournal(false); });
     return () => { 
-        Object.values(measureAudioPlayersRef.current).forEach(entryPlayers => {
+        Object.values(measureAudioPlayers).forEach(entryPlayers => {
             if (Array.isArray(entryPlayers)) {
                 entryPlayers.forEach(p => p.pause());
             }
         });
-        if (sceneAudioPlayerRef.current) sceneAudioPlayerRef.current.pause();
+        if (sceneAudioPlayer.current) sceneAudioPlayer.current.pause();
         unsubscribe();
     };
   }, [db, coupleId, appId]);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { getFirestore, doc, getDoc, onSnapshot, collection, query, where, addDoc, getDocs, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, addDoc, getDocs, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { FirebaseContext } from './FirebaseContext';
 
 export const CoupleContext = createContext(null);
@@ -23,8 +23,16 @@ export const CoupleProvider = ({ children }) => {
     const q2 = query(couplesRef, where("user2Id", "==", userId));
     let foundId = null;
     const checkAndSetCouple = (docId) => { if (!foundId) { foundId = docId; setCoupleId(docId); }};
-    const unsub1 = onSnapshot(q1, (snapshot) => { if (!snapshot.empty) { checkAndSetCouple(snapshot.docs[0].id); } else if (!foundId) { setCoupleId(null); } if(loadingCouple) setLoadingCouple(false); }, (err) => { console.error("Query error (user1):", err); setErrorCouple("Failed to find couple."); setLoadingCouple(false); });
-    const unsub2 = onSnapshot(q2, (snapshot) => { if (!snapshot.empty) { checkAndSetCouple(snapshot.docs[0].id); } else if (!foundId) { setCoupleId(null); } if(loadingCouple) setLoadingCouple(false); }, (err) => { console.error("Query error (user2):", err); setErrorCouple("Failed to find couple."); setLoadingCouple(false); });
+    const unsub1 = onSnapshot(q1, (snapshot) => {
+      if (!snapshot.empty) { checkAndSetCouple(snapshot.docs[0].id); }
+      else if (!foundId) { setCoupleId(null); }
+      setLoadingCouple(false);
+    }, (err) => { console.error("Query error (user1):", err); setErrorCouple("Failed to find couple."); setLoadingCouple(false); });
+    const unsub2 = onSnapshot(q2, (snapshot) => {
+      if (!snapshot.empty) { checkAndSetCouple(snapshot.docs[0].id); }
+      else if (!foundId) { setCoupleId(null); }
+      setLoadingCouple(false);
+    }, (err) => { console.error("Query error (user2):", err); setErrorCouple("Failed to find couple."); setLoadingCouple(false); });
     return () => { unsub1(); unsub2(); };
   }, [db, userId, isAuthReady, appId]);
 
@@ -47,14 +55,29 @@ export const CoupleProvider = ({ children }) => {
     setLoadingCouple(true); setErrorCouple(null);
     try {
       const couplesRef = collection(db, `artifacts/${appId}/public/data/couples`);
-      let newCoupleData = { score: 0, currentActivityId: null, createdAt: serverTimestamp() };
+      let newCoupleData = {
+        score: 0,
+        currentActivityId: null,
+        createdAt: serverTimestamp(),
+        experienceStep: 0,
+        experienceCompleted: false,
+        completedActivityIds: []
+      };
       const currentUserDisplayName = firebaseAuthInstance?.currentUser?.displayName || "User";
       if (partnerId === "0") { 
         newCoupleData = { ...newCoupleData, user1Id: userId, user1DisplayName: `${currentUserDisplayName} (P1 Test)`, user2Id: userId, user2DisplayName: `${currentUserDisplayName} (P2 Test)`, status: "active_testing" };
       } else {
-        const qPartnerCheck = query(couplesRef, where("user1Id", "in", [partnerId]), where("user2Id", "in", [partnerId]));
-        const partnerSnap = await getDocs(qPartnerCheck);
-        if (!partnerSnap.empty) { setErrorCouple("Partner already in a couple."); setLoadingCouple(false); return; }
+        const qPartnerAsUser1 = query(couplesRef, where("user1Id", "==", partnerId));
+        const qPartnerAsUser2 = query(couplesRef, where("user2Id", "==", partnerId));
+        const [partnerAsUser1Snap, partnerAsUser2Snap] = await Promise.all([
+          getDocs(qPartnerAsUser1),
+          getDocs(qPartnerAsUser2)
+        ]);
+        if (!partnerAsUser1Snap.empty || !partnerAsUser2Snap.empty) {
+          setErrorCouple("Partner already in a couple.");
+          setLoadingCouple(false);
+          return;
+        }
         newCoupleData = { ...newCoupleData, user1Id: userId, user1DisplayName: currentUserDisplayName, user2Id: partnerId, user2DisplayName: "Partner 2 (Invited)", status: "pending_partner_join" };
       }
       const newCoupleDocRef = await addDoc(couplesRef, newCoupleData);

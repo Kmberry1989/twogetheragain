@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MicIcon } from '../components/Icons';
 
 export const ScriptedScenesActivity = ({ activity, onUpdateActivity, onEndActivity, coupleData, userId }) => {
@@ -9,12 +9,20 @@ export const ScriptedScenesActivity = ({ activity, onUpdateActivity, onEndActivi
     const isMyTurn = currentLine && (activity.turn === userId || (coupleData?.status === "active_testing"));
     
     const [isRecording, setIsRecording] = useState(false);
-    const [mediaRecorder, setMediaRecorder] = useState(null);
+    const mediaRecorderRef = useRef(null);
     const [message, setMessage] = useState(activityData.message || `Scene: ${activityData.scenePrompt || "A Mystery Scene!"}`);
 
     useEffect(() => {
         setMessage(activityData.message || `Scene: ${activityData.scenePrompt || "A Mystery Scene!"}`);
-    }, [activityData]);
+    }, [activityData.message, activityData.scenePrompt]);
+
+    useEffect(() => {
+        return () => {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+                mediaRecorderRef.current.stop();
+            }
+        };
+    }, []);
 
     const voiceDirections = ["with a deep voice", "whispering", "excitedly", "very tired", "like a robot", "singing it", "very fast", "super slowly", "like you're on stage"];
 
@@ -35,9 +43,11 @@ export const ScriptedScenesActivity = ({ activity, onUpdateActivity, onEndActivi
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             const chunks = [];
+            mediaRecorderRef.current = recorder;
             recorder.ondataavailable = e => chunks.push(e.data);
             recorder.onstop = async () => {
                 stream.getTracks().forEach(track => track.stop());
+                mediaRecorderRef.current = null;
                 setIsRecording(false);
                 const blob = new Blob(chunks, { type: 'audio/webm' });
                 const reader = new FileReader();
@@ -87,7 +97,11 @@ export const ScriptedScenesActivity = ({ activity, onUpdateActivity, onEndActivi
         } catch (err) { console.error("Mic error:", err); setMessage("Mic error: " + err.message); setIsRecording(false); }
     };
     
-    const stopRecording = () => { if (mediaRecorder && isRecording) { mediaRecorder.stop(); }};
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop();
+        }
+    };
 
     return (
         <div className="text-center p-4 rounded-lg bg-orange-50 shadow-inner">
