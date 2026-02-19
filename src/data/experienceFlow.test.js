@@ -4,7 +4,9 @@ describe('experienceFlow', () => {
   test('defines a deterministic structured sequence', () => {
     expect(EXPERIENCE_FLOW.map((step) => step.id)).toEqual([
       'coin-toss',
+      'check-in',
       'collaborative-story',
+      'gratitude-exchange',
       'scripted-scenes',
       'duet-harmonies-measures',
       'song-creation'

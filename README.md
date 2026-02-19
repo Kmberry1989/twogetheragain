@@ -1,19 +1,23 @@
 # Twogether - A Collaborative App for Couples
 
-This is a React-based web application designed to help couples connect through fun, interactive, and creative activities.
+This is a React-based web application designed to help couples connect through a structured, playful, and collaborative set of activities.
 
 ## Features
 
 - **Anonymous Sign-In:** Users are automatically given a unique anonymous ID.
 - **Couple Up:** Users can create a new couple by inviting a partner with their User ID, or join an existing couple.
 - **Test Mode:** A special mode for developers to act as both partners to test activities.
-- **Interactive Activities:** A randomly selected activity for couples to play together, including:
+- **Structured Couple Journey:** Activities now run as a guided sequence rather than random-only start.
+- **Interactive Activities:** Includes:
   - 3D Coin Toss
+  - Relationship Check-In
   - Collaborative Story Writing
+  - Gratitude Exchange
   - Duet Harmonies (two versions)
   - Scripted Scene Voice Acting
 - **Journey Journal:** A keepsake journal that saves the results and memories from every completed activity.
 - **Real-time Updates:** Built with Firebase Firestore for seamless real-time collaboration.
+- **Automated Tests:** Unit tests cover journey flow configuration plus activity turn/completion behavior.
 
 ## Project Setup
 
@@ -48,6 +52,17 @@ This is a React-based web application designed to help couples connect through f
     npm start
     ```
     The app will be available at `http://localhost:3000`.
+
+### Validation Commands
+
+- **Run tests once (CI mode):**
+  ```sh
+  npm run test:ci
+  ```
+- **Run full verification (tests + production build):**
+  ```sh
+  npm run verify
+  ```
 
 ## File Structure
 

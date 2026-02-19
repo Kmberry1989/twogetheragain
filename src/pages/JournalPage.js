@@ -2,15 +2,8 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { FirebaseContext } from '../contexts/FirebaseContext';
 import { CoupleContext } from '../contexts/CoupleContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { HomeIcon, BookIcon, DiceIcon, PenToolIcon, MicIcon, Music2Icon, MessageSquareIcon, PlayIcon, StopCircleIcon } from '../components/Icons';
-
-const allActivitiesList = [
-    { id: 'coin-toss', name: 'Coin Toss Challenge', icon: DiceIcon },
-    { id: 'collaborative-story', name: 'Our Story Unfolds', icon: PenToolIcon },
-    { id: 'song-creation', name: 'Duet Harmonies (Original)', icon: MicIcon },
-    { id: 'duet-harmonies-measures', name: 'Duet Harmonies (Measures)', icon: Music2Icon },
-    { id: 'scripted-scenes', name: 'Scripted Scenes', icon: MessageSquareIcon },
-];
+import { HomeIcon, BookIcon, PlayIcon, StopCircleIcon } from '../components/Icons';
+import { allActivitiesList } from '../data/activitiesRegistry';
 
 const JournalPage = ({ onNavigate }) => {
   const { db, appId, userId: currentUserId } = useContext(FirebaseContext); 
@@ -132,7 +125,9 @@ const JournalPage = ({ onNavigate }) => {
                 {entry.result && (
                   <div className="text-gray-700 space-y-2 text-sm">
                     {entry.activityType === 'coin-toss' && entry.result.outcome && ( <p>Outcome: <span className="font-medium text-blue-600">{entry.result.outcome}</span>. Winner: <span className="font-medium text-green-600">{getUserDisplayName(entry.result.winnerId)}</span>!</p> )}
+                    {entry.activityType === 'check-in' && entry.result.entries && ( <div> <p className="font-medium mb-1 text-purple-600">Check-In Prompt: <span className="italic text-gray-500">{entry.result.prompt || "N/A"}</span></p> {entry.result.entries.length > 0 ? (entry.result.entries.map((item, index) => ( <div key={index} className="mb-1 p-2 bg-white rounded border"> <p className="text-xs text-gray-500">{getUserDisplayName(item.userId, item.role)} rated mood {item.mood}/5</p> <p className="text-sm italic">"{item.note}"</p> </div> ))) : ( <p className="italic">No check-ins recorded.</p> )} </div> )}
                     {entry.activityType === 'collaborative-story' && entry.result.story && ( <div> <p className="font-medium mb-1 text-purple-600">Our Story (Prompt: <span className="italic text-gray-500">{entry.result.prompt || "N/A"}</span>):</p> <p className="whitespace-pre-wrap italic bg-white p-3 rounded border">{entry.result.story.replace(entry.result.prompt + "\n", "")}</p> </div> )}
+                    {entry.activityType === 'gratitude-exchange' && entry.result.notes && ( <div> <p className="font-medium mb-1 text-purple-600">Gratitude Prompt: <span className="italic text-gray-500">{entry.result.prompt || "N/A"}</span></p> {entry.result.notes.length > 0 ? (entry.result.notes.map((item, index) => ( <div key={index} className="mb-1 p-2 bg-white rounded border"> <p className="text-xs text-gray-500">{getUserDisplayName(item.userId, item.role)}</p> <p className="text-sm italic">"{item.text}"</p> </div> ))) : ( <p className="italic">No gratitude notes recorded.</p> )} </div> )}
                     {entry.activityType === 'song-creation' && entry.result.audioParts && ( <div> <p className="font-medium mb-1 text-purple-600">Our Duet:</p> {entry.result.audioParts.length > 0 ? ( entry.result.audioParts.map((part, index) => ( <div key={index} className="mb-2 p-2 bg-white rounded border"> <p className="text-xs text-gray-500">Track {index + 1} by {getUserDisplayName(part.userId, part.role)}:</p> <audio controls src={part.audioData} className="w-full h-10"></audio> </div> )) ) : ( <p className="italic">No audio recorded.</p> )} </div> )}
                     
                     {entry.activityType === 'duet-harmonies-measures' && entry.result.layers && ( 

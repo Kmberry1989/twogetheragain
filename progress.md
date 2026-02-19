@@ -24,3 +24,33 @@ Original prompt: Create a plan to... scan this project for errors/bugs and rebui
 - Re-ran `npm run build`: now compiles successfully with no ESLint warnings.
 - Ran `CI=true npm test -- --watch=false`: 1 suite passing (new experience flow tests).
 - Ran `npm run build`: production build compiles successfully.
+- Added new activities: `check-in` and `gratitude-exchange` with turn-based logic and journal-ready result payloads.
+- Wired new activities into `ActivitiesPage` list + initialization and into the structured `EXPERIENCE_FLOW` sequence.
+- Updated `JournalPage` to render both new activity result types.
+- Added/expanded tests for existing activities:
+  - `src/activities/CollaborativeWritingActivity.test.js`
+  - `src/activities/ScriptedScenesActivity.test.js`
+- Validation:
+  - `CI=true npm test -- --watch=false` passes (3 suites, 5 tests)
+  - `npm run build` passes
+- Continued hardening:
+  - Added `src/activities/CheckInActivity.test.js` (turn progression + completion assertions).
+  - Added `src/activities/GratitudeExchangeActivity.test.js` (turn progression + completion assertions).
+  - Removed a brittle `ActivitiesPage` helper test that imported Firebase runtime in Jest and caused `TextEncoder` failures.
+- Current automated verification:
+  - `CI=true npm test -- --watch=false` -> 5 suites passed, 9 tests passed.
+  - `npm run build` -> compiled successfully.
+- Refactored activity metadata into `src/data/activitiesRegistry.js` and reused it in:
+  - `src/pages/ActivitiesPage.js`
+  - `src/pages/JournalPage.js`
+- Added `src/data/activitiesRegistry.test.js` to validate:
+  - new activity registration
+  - initial data builders
+  - experience-flow ID coverage
+- Added scripts in `package.json`:
+  - `test:ci`
+  - `verify`
+- Updated `README.md` with structured journey/new activities/testing commands.
+- Validation:
+  - `npm run test:ci` passes
+  - `npm run verify` passes

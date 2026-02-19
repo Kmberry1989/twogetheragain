@@ -2,68 +2,9 @@ import React, { useState, useEffect, useContext } from 'react';
 import { FirebaseContext } from '../contexts/FirebaseContext';
 import { CoupleContext } from '../contexts/CoupleContext';
 import { doc, updateDoc, addDoc, collection, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { HomeIcon, DiceIcon, PenToolIcon, MicIcon, Music2Icon, MessageSquareIcon } from '../components/Icons';
+import { HomeIcon } from '../components/Icons';
+import { getActivityById, buildInitialActivityData } from '../data/activitiesRegistry';
 import { EXPERIENCE_FLOW, getExperienceStep } from '../data/experienceFlow';
-
-import { CoinTossActivity } from '../activities/CoinTossActivity';
-import { CollaborativeWritingActivity } from '../activities/CollaborativeWritingActivity';
-import { SongCreationActivity } from '../activities/SongCreationActivity';
-import { DuetHarmoniesMeasuresActivity } from '../activities/DuetHarmoniesMeasuresActivity';
-import { ScriptedScenesActivity } from '../activities/ScriptedScenesActivity';
-
-const allActivitiesList = [
-  { id: 'coin-toss', name: 'Coin Toss Challenge', component: CoinTossActivity, icon: DiceIcon, description: "A quick 3D coin toss!" },
-  { id: 'collaborative-story', name: 'Our Story Unfolds', component: CollaborativeWritingActivity, icon: PenToolIcon, description: "Build a unique story together." },
-  { id: 'song-creation', name: 'Duet Harmonies (Original)', component: SongCreationActivity, icon: MicIcon, description: "Record audio layers for a song." },
-  { id: 'duet-harmonies-measures', name: 'Duet Harmonies (Measures)', component: DuetHarmoniesMeasuresActivity, icon: Music2Icon, description: "Layer short musical measures." },
-  { id: 'scripted-scenes', name: 'Scripted Scenes', component: ScriptedScenesActivity, icon: MessageSquareIcon, description: "Voice act a script together." },
-];
-
-const buildInitialActivityData = (activityId) => {
-  const initialActivityData = { suggestionsLog: [], turnHistory: [] };
-
-  if (activityId === 'collaborative-story') {
-    const prompts = ["Once upon a time...", "The old house..."];
-    initialActivityData.prompt = prompts[Math.floor(Math.random() * prompts.length)];
-    initialActivityData.currentText = `${initialActivityData.prompt}\n`;
-  } else if (activityId === 'duet-harmonies-measures') {
-    const prompts = ["Rainy Day Groove", "Sunrise Serenity"];
-    initialActivityData.prompt = prompts[Math.floor(Math.random() * prompts.length)];
-    initialActivityData.tempo = 120;
-    initialActivityData.measures = 2;
-    initialActivityData.secondsPerLoop = (60 / initialActivityData.tempo) * 4 * initialActivityData.measures;
-    initialActivityData.layers = [];
-    initialActivityData.maxLayersPerUser = 2;
-  } else if (activityId === 'scripted-scenes') {
-    const scenes = [
-      {
-        prompt: "Pirate & Mermaid",
-        script: [
-          { char: "Captain", line: "Arrr, treasure!" },
-          { char: "Mermaid", line: "Never!" }
-        ]
-      },
-      {
-        prompt: "Squirrels & Acorn",
-        script: [
-          { char: "Squeaky", line: "My acorn!" },
-          { char: "Nutsy", line: "No, mine!" }
-        ]
-      }
-    ];
-    const selectedScene = scenes[Math.floor(Math.random() * scenes.length)];
-    initialActivityData.scenePrompt = selectedScene.prompt;
-    initialActivityData.script = selectedScene.script.map((line) => ({
-      ...line,
-      recordedAudioData: null,
-      voiceDirection: null
-    }));
-    initialActivityData.currentLineIndex = 0;
-    initialActivityData.maxLines = selectedScene.script.length;
-  }
-
-  return initialActivityData;
-};
 
 const ActivitiesPage = ({ onNavigate }) => {
   const { db, userId, appId } = useContext(FirebaseContext);
@@ -76,7 +17,7 @@ const ActivitiesPage = ({ onNavigate }) => {
   const experienceStep = getExperienceStep(coupleData?.experienceStep);
   const experienceComplete = Boolean(coupleData?.experienceCompleted) || experienceStep >= EXPERIENCE_FLOW.length;
   const nextExperienceTarget = experienceComplete ? null : EXPERIENCE_FLOW[experienceStep];
-  const nextExperienceDetails = nextExperienceTarget ? allActivitiesList.find((activityItem) => activityItem.id === nextExperienceTarget.id) : null;
+  const nextExperienceDetails = nextExperienceTarget ? getActivityById(nextExperienceTarget.id) : null;
   const completedCount = Math.min(EXPERIENCE_FLOW.length, experienceStep);
 
   useEffect(() => {
@@ -198,7 +139,7 @@ const ActivitiesPage = ({ onNavigate }) => {
         result: activityResult
       });
 
-      const activityDetails = allActivitiesList.find((activityItem) => activityItem.id === currentActivity.type);
+      const activityDetails = getActivityById(currentActivity.type);
       await addDoc(collection(db, `artifacts/${appId}/public/data/journalEntries`), {
         coupleId,
         activityId: currentActivity.id,
@@ -255,9 +196,7 @@ const ActivitiesPage = ({ onNavigate }) => {
     }
   };
 
-  const currentActivityDetails = currentActivity
-    ? allActivitiesList.find((activityItem) => activityItem.id === currentActivity.type)
-    : null;
+  const currentActivityDetails = currentActivity ? getActivityById(currentActivity.type) : null;
   const CurrentActivityComponent = currentActivityDetails ? currentActivityDetails.component : null;
 
   return (
