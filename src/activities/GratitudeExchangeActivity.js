@@ -6,8 +6,9 @@ export const GratitudeExchangeActivity = ({ activity, onUpdateActivity, onEndAct
   const [selectedColor, setSelectedColor] = useState('bg-yellow-100');
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  // Initialize the notes object if it doesn't exist
-  const notes = activityData.notes || {};
+  // Wrapped 'notes' in useMemo to prevent re-creation on every render and satisfy ESLint
+  const notes = useMemo(() => activityData.notes || {}, [activityData.notes]);
+  
   const partnerId = coupleData?.status === "active_testing" 
     ? (userId === coupleData?.user1Id ? coupleData?.user2Id : coupleData?.user1Id) 
     : (userId === coupleData?.user1Id ? coupleData?.user2Id : coupleData?.user1Id);
