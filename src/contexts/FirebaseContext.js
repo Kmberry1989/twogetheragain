@@ -3,7 +3,8 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { 
     initializeFirestore, 
-    memoryLocalCache
+    persistentLocalCache,
+    persistentMultipleTabManager
 } from 'firebase/firestore';
 
 export const FirebaseContext = createContext(null);
@@ -37,10 +38,10 @@ export const FirebaseProvider = ({ children }) => {
 
     const initializedApp = initializeApp(firebaseConfig);
     
-    // Initialize Firestore with in-memory cache to avoid IndexedDB issues.
-    // This is the modern and correct way to do it, which avoids the "SDK cache is already specified" error.
+    // Initialize Firestore with persistent cache to enable offline mode.
+    // This allows the app to function during spotty connectivity.
     const firestoreDb = initializeFirestore(initializedApp, {
-        localCache: memoryLocalCache()
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
 
     const firebaseAuth = getAuth(initializedApp);

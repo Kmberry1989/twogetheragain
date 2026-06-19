@@ -18,6 +18,7 @@ export const CoinTossActivity = ({ activity, onUpdateActivity, onEndActivity, co
   const rotationSpeed = useRef(0.0); 
   const targetRotationY = useRef(0); 
   const isAnimating = useRef(false);
+  const [swipeStartY, setSwipeStartY] = useState(null);
 
   useEffect(() => { 
     if (!activityData.playerAssignments && coupleData?.user1Id && coupleData?.user2Id) { 
@@ -130,17 +131,46 @@ export const CoinTossActivity = ({ activity, onUpdateActivity, onEndActivity, co
     return "Partner"; 
   }; 
 
-  const handleToss = () => { 
+  const handlePointerDown = (e) => {
+    if (!isMyTurn || activityData.tossResult || tossInitiatedByMe || !coin.current) return;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    setSwipeStartY(clientY);
+  };
+
+  const handlePointerUp = (e) => {
+    if (swipeStartY === null || !isMyTurn || activityData.tossResult || tossInitiatedByMe || !coin.current) {
+        setSwipeStartY(null);
+        return;
+    }
+    const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+    const deltaY = swipeStartY - clientY; 
+    setSwipeStartY(null);
+
+    // If swipe is upward and significant enough
+    if (deltaY > 30) {
+        const force = Math.min(deltaY / 200, 1.0); // Normalize swipe force
+        executeToss(force);
+    }
+  };
+
+  const executeToss = (force = 0.5) => {
     if (!isMyTurn || activityData.tossResult || tossInitiatedByMe || !coin.current) { 
-      setMessage(isMyTurn ? "Toss done." : "Not your turn!"); 
-      return; 
+        setMessage(isMyTurn ? "Toss done." : "Not your turn!"); 
+        return; 
     } 
     setMessage("Tossing..."); 
     setTossInitiatedByMe(true); 
     isAnimating.current = true; 
-    rotationSpeed.current = 0.2 + Math.random() * 0.2; 
+    
+    // Rotation speed now scales dynamically with swipe force
+    rotationSpeed.current = 0.2 + (force * 0.4) + (Math.random() * 0.1); 
     targetRotationY.current = Math.random() < 0.5 ? 0 : Math.PI; 
+    
     onUpdateActivity({ ...activityData, message: "Coin in air!", showContinueButton: false, turn: userId }); 
+  };
+
+  const handleTossClick = () => { 
+    executeToss(0.5); 
   }; 
 
   const handleContinue = () => { 
@@ -153,18 +183,49 @@ export const CoinTossActivity = ({ activity, onUpdateActivity, onEndActivity, co
   const partnerAssignment = playerAssignments[partnerIdForDisplay] || (myAssignment === "Heads" ? "Tails" : "Heads");
 
   return ( 
-    <div className="text-center p-4 rounded-lg bg-sky-50 shadow-inner"> 
+    <div className="text-center p-4 rounded-lg bg-sky-50 shadow-inner flex flex-col items-center"> 
       <h3 className="text-2xl font-bold mb-3 text-sky-700">Coin Toss!</h3> 
       {myAssignment && <p>You: <span className={`font-bold ${myAssignment === 'Heads' ? 'text-yellow-600' : 'text-gray-600'}`}>{myAssignment}</span></p>} 
       {coupleData?.status !== "active_testing" && partnerAssignment && partnerIdForDisplay && coupleData && <p>Partner ({getUserDisplayName(partnerIdForDisplay, coupleData)}): <span className={`font-bold ${partnerAssignment === 'Heads' ? 'text-yellow-600' : 'text-gray-600'}`}>{partnerAssignment}</span></p>} 
       {coupleData?.status === "active_testing" && <p>Test Mode: Coin has Heads & Tails.</p>} 
-      {!tossResult && (<p>{isMyTurn ? "Your turn!" : `Waiting for ${getUserDisplayName(activity.turn, coupleData)}...`}</p>)} 
-      <div className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto h-48 sm:h-64 md:h-72 bg-sky-200 rounded-lg overflow-hidden shadow-lg my-4 border-2 border-sky-300">
+      {!tossResult && (<p className="mt-2 font-medium">{isMyTurn ? "Your turn!" : `Waiting for ${getUserDisplayName(activity.turn, coupleData)}...`}</p>)} 
+      
+      {(!tossResult && isMyTurn && !tossInitiatedByMe) && (
+        <p className="text-sm italic text-sky-600 mt-2 animate-pulse">Swipe up on the coin or tap Toss!</p>
+      )}
+
+      <div 
+        className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto h-48 sm:h-64 md:h-72 bg-sky-200 rounded-lg overflow-hidden shadow-lg my-4 border-2 border-sky-300 touch-none cursor-grab active:cursor-grabbing"
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
         <canvas ref={canvasRef} className="w-full h-full block"></canvas>
       </div> 
-      {!tossResult && isMyTurn && ( <button onClick={handleToss} disabled={(!myAssignment && coupleData?.status !== "active_testing") || tossInitiatedByMe} className="btn-primary"> Toss! </button> )} 
-      {tossResult && ( <div className="mt-4 p-3 bg-white rounded shadow"> <p className="text-xl font-semibold">{activityData.message}</p> <p className="text-2xl mt-1">Landed: <span className={`font-bold ${tossResult === 'Heads' ? 'text-yellow-600' : 'text-gray-600'}`}>{tossResult}</span></p> </div> )} 
-      {showContinueButton && tossResult && ( <button onClick={handleContinue} className="btn-success mt-6"> Continue </button> )} 
+
+      {!tossResult && isMyTurn && ( 
+        <button 
+          onClick={handleTossClick} 
+          disabled={(!myAssignment && coupleData?.status !== "active_testing") || tossInitiatedByMe} 
+          className="btn-primary"
+        > 
+          Toss! 
+        </button> 
+      )} 
+      
+      {tossResult && ( 
+        <div className="mt-4 p-3 bg-white rounded shadow w-full max-w-xs"> 
+          <p className="text-xl font-semibold">{activityData.message}</p> 
+          <p className="text-2xl mt-1">Landed: <span className={`font-bold ${tossResult === 'Heads' ? 'text-yellow-600' : 'text-gray-600'}`}>{tossResult}</span></p> 
+        </div> 
+      )} 
+      
+      {showContinueButton && tossResult && ( 
+        <button onClick={handleContinue} className="btn-success mt-6"> 
+          Continue 
+        </button> 
+      )} 
+      
       {message && !activityData.message && <p className="text-sm text-gray-500 mt-3">{message}</p>} 
     </div> 
   );
