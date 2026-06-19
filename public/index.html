@@ -3,32 +3,26 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <meta name="theme-color" content="#38bdf8" />
     <meta
       name="description"
-      content="Twogether - A collaborative app for couples"
+      content="Twogether - A shared space for couples to connect, play, and grow."
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Added crossorigin attribute to allow Vercel to pass auth cookies for the manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" crossorigin="use-credentials" />
+    
+    <!-- Google Fonts for the UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
     <title>Twogether</title>
   </head>
-  <body>
+  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-sky-200 selection:text-sky-900">
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    <script>
-      // PASTE YOUR FIREBASE CONFIG OBJECT HERE and UNCOMMENT
-      /*
-      const __firebase_config = JSON.stringify({
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_AUTH_DOMAIN",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_STORAGE_BUCKET",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID"
-      });
-      const __app_id = "your-unique-app-identifier"; // e.g., "twogether"
-      */
-    </script>
   </body>
 </html>
